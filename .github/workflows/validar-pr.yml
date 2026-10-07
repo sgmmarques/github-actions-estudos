@@ -1,0 +1,42 @@
+name: Validar workflows do PR
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actionlint:
+    name: Validar YAML e scripts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Baixar os arquivos do repositório
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Instalar actionlint
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash \
+            --output "$RUNNER_TEMP/download-actionlint.bash"
+
+          bash "$RUNNER_TEMP/download-actionlint.bash" \
+            1.7.11 "$RUNNER_TEMP"
+
+          "$RUNNER_TEMP/actionlint" -version
+          shellcheck --version
+
+      - name: Validar os workflows
+        shell: bash
+        run: |
+          "$RUNNER_TEMP/actionlint" -color
